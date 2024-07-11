@@ -1,5 +1,13 @@
 # Run commands
 
+The `configure_system.sh` file should alredy be copied to the VM. Most likely in a directory called `~/initialize-server`.
+
+Make sure `configure_system.sh` is executable. If needed run the following:
+
+```sh
+chmod +x ./configure_system.sh
+```
+
 ## KMaster command
 
 ```sh

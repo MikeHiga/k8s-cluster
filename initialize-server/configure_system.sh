@@ -35,6 +35,7 @@ append_to_hosts "192.168.1.111" "kworker02"
 if [ -f /etc/netplan/00-installer-usedhcp.yaml ] && [ ! -f /etc/netplan/00-installer-usedhcp.yaml.bak ]; then
     sudo mv /etc/netplan/00-installer-usedhcp.yaml /etc/netplan/00-installer-usedhcp.yaml.bak
 fi
+
 if [ -f /etc/netplan/10-static_ip.yaml.bak ] && [ ! -f /etc/netplan/10-static_ip.yaml ]; then
     sudo mv /etc/netplan/10-static_ip.yaml.bak /etc/netplan/10-static_ip.yaml
 fi
