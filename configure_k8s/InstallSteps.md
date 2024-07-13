@@ -124,10 +124,18 @@ mkdir -p /etc/containerd
 
 # Generate default containerd configuration and edit for Kubernetes
 containerd config default | tee /etc/containerd/config.toml
+```
 
+### Manually edit config.toml
+
+```sh
 # Manually edit /etc/containerd/config.toml to change SystemdCgroup to true
 nvim /etc/containerd/config.toml
+```
 
+### Restart containerd
+
+```sh
 # Restart containerd to apply configuration changes
 systemctl restart containerd
 ```
@@ -171,17 +179,16 @@ reboot
 
 ```sh
 # Switch to the root user
-sudo su
+sudo -i
 ```
 
 ***<span style='color: red;'>STOP RIGHT HERE!! Re-initilize the variables that hold version information.</span>***
 
 ```sh
 # Re-set version variables
-KUBERNETES_VERSION_MajorMinor="1.30"
+KUBERNETES_VERSION_MajorMinorPatch="1.30.2"
 KUBERNETES_VERSION="1.30.2-1.1"
 CALICO_VERSION="v3.28.0"
-
 ```
 
 ### Installing Kubernetes Components
@@ -189,9 +196,9 @@ CALICO_VERSION="v3.28.0"
 ```sh
 # Install specific versions of kubelet, kubeadm, and kubectl
 
-#apt-get install -y kubelet=${KUBERNETES_VERSION} kubeadm=${KUBERNETES_VERSION} kubectl=${KUBERNETES_VERSION}
+apt-get install -y kubelet=${KUBERNETES_VERSION} kubeadm=${KUBERNETES_VERSION} kubectl=${KUBERNETES_VERSION}
 
-apt-get install -y kubelet kubeadm kubectl
+#apt-get install -y kubelet kubeadm kubectl
 
 # Mark the Kubernetes packages to hold them at the installed version
 apt-mark hold kubelet kubeadm kubectl
@@ -202,14 +209,47 @@ apt-mark hold kubelet kubeadm kubectl
 ```sh
 # Initialize the Kubernetes control plane with a specific pod network CIDR and Kubernetes version
 # Also, set the node name to kmaster
-kubeadm init --pod-network-cidr 10.10.0.0/16 --kubernetes-version ${KUBERNETES_VERSION} --node-name kmaster
+kubeadm init --pod-network-cidr 10.10.0.0/16 --kubernetes-version ${KUBERNETES_VERSION_MajorMinorPatch} --node-name kmaster
+```
 
+### RUN THIS COMMAND TO GET RID OF THOSE STUPID LOCALHOST:8080 ERRORS!!!
+
+#### For Root user
+
+```sh
 # Set the KUBECONFIG environment variable to use the admin.conf file for kubectl commands
-# RUN THIS COMMAND TO GET RID OF THOSE STUPID LOCALHOST:8080 ERRORS!!!
 export KUBECONFIG=/etc/kubernetes/admin.conf
 ```
 
-### Installing Calico CNI Plugin
+#### For Non-Root user
+
+To allow a non-root user to access the cluster, follow these steps:
+
+1. Copy admin.conf to the User's Home Directory:
+
+    ```sh
+    mkdir -p $HOME/.kube/
+    sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config
+    sudo chown $(id -u):$(id -g) $HOME/.kube/config
+    ```
+
+1. Set the KUBECONFIG Environment Variable:
+
+    ```sh
+    export KUBECONFIG=$HOME/.kube/config
+    ```
+
+1. Optional: Add to Shell Profile:
+To make this change persistent across sessions, add the export command to your shell profile (e.g., .bashrc or .bash_profile):
+
+    ```sh
+    echo 'export KUBECONFIG=$HOME/.kube/config' >> ~/.bashrc
+    source ~/.bashrc
+    ```
+
+### Installing Calico CNI Plugin  (Only on Control Node)
+
+#### Apply the Tigera operator for Calico
 
 ```sh
 # Apply the Tigera operator for Calico
@@ -217,16 +257,24 @@ kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/${CALIC
 
 # Download the custom resources for Calico configuration
 wget https://raw.githubusercontent.com/projectcalico/calico/${CALICO_VERSION}/manifests/custom-resources.yaml
+```
 
+#### Edit the custom-resources.yaml
+
+```sh
 # Edit the custom-resources.yaml file to set the CIDR for pods if necessary
+# Change cidr: to 10.10.0.0/16 because that's what we set it to when initializing kubeadm
 nvim custom-resources.yaml
+```
 
+#### Apply the Calico custom resources configuration
+
+```sh
 # Apply the Calico custom resources configuration
-# Chante cidr to 10.10.0.0/16 because that's what we set it to when initializing kubeadm
 kubectl apply -f custom-resources.yaml
 ```
 
-### Obtaining Join Command for Worker Nodes
+#### Obtaining Join Command for Worker Nodes
 
 ```sh
 # Generate and print the command to join additional nodes to the cluster
