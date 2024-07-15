@@ -287,6 +287,15 @@ kubeadm token create --print-join-command
 
 Run the command from the token create output. `kubeadm token create --print-join-command`
 
+## Run these on the controller
+
+These commands will lable the worker nodes.
+
+```sh
+kubectl label node kworker01 node-role.kubernetes.io/worker=worker
+kubectl label node kworker02 node-role.kubernetes.io/worker=worker
+```
+
 ### Notes
 
 * The `--node-name` value is correctly set to `kmaster` during the Kubernetes control plane initialization.

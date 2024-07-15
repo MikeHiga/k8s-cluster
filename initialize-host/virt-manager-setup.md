@@ -21,10 +21,10 @@
 1. Create a Bridge Interface on the Host:
 
    * First, you need to create a bridge interface on your host machine. This can be done by editing the network interfaces configuration file.
-   * Open the network interfaces configuration file:
+   * Create a new network interfaces configuration file `br0.cfg`:
 
        ```sh
-       sudo vim /etc/network/interfaces
+       sudo vim /etc/network/interfaces.d/
        ```
 
    * Add the following configuration for the bridge (assuming your primary network interface is enp8s0):

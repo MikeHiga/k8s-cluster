@@ -1,0 +1,7 @@
+
+Ubuntu 22.04 Template OS
+
+Template for Ubuntu 22.04
+
+kubeadm join 192.168.1.100:6443 --token 4xycup.4miym0r8tcikptus --discovery-token-ca-cert-hash sha256:c026dff10c525b0b968219d9b6437c5c77a7a072a0c7c0477d41bf1fc2e359ab
+kubeadm join 192.168.1.100:6443 --token h6y78n.npwk6kuvmbdhl7tz --discovery-token-ca-cert-hash sha256:c026dff10c525b0b968219d9b6437c5c77a7a072a0c7c0477d41bf1fc2e359ab
