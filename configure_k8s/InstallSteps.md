@@ -3,7 +3,7 @@
 |Software|version|URL|
 |---|---|---|
 |UBUNTU SERVER|22.04.4 LTS (Jammy Jellyfish)|https://ubuntu.com/download/server|
-|KUBERNETES|1.30.2|https://kubernetes.io/releases/|
+|KUBERNETES|1.30.3|https://kubernetes.io/releases/|
 |CONTAINERD|1.7.2|https://containerd.io/releases/|
 |RUNC|1.1.7|https://github.com/opencontainers/runc/releases|
 |CNI PLUGINS|1.5.1|https://github.com/containernetworking/plugins/releases|
@@ -35,7 +35,9 @@ sudo -i
 
 ```sh
 # Set version variables
-KUBERNETES_VERSION_MajorMinor="1.30"
+KMAJOR="1"
+KMINOR="30"
+KUBERNETES_VERSION_MajorMinor="${KMAJOR}.${KMINOR}"
 CONTAINERD_VERSION="1.7.2"
 RUNC_VERSION="1.1.7"
 CNI_PLUGINS_VERSION="1.5.1"
@@ -85,11 +87,14 @@ Install and configure the container runtime.
 ```sh
 # Download and extract containerd
 wget https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz -P /tmp/
+
 tar -C /usr/local -xzvf /tmp/containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz
 
 # Download and configure the containerd systemd service
 wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service -P /etc/systemd/system/
+
 systemctl daemon-reload
+
 systemctl enable --now containerd
 ```
 
@@ -100,6 +105,7 @@ Install the runc runtime component.
 ```sh
 # Download and install runc
 wget https://github.com/opencontainers/runc/releases/download/v${RUNC_VERSION}/runc.amd64 -P /tmp/
+
 install -m 755 /tmp/runc.amd64 /usr/local/sbin/runc
 ```
 
@@ -110,7 +116,9 @@ Install the Container Network Interface (CNI) plugins required for Kubernetes ne
 ```sh
 # Download and install CNI plugins
 wget https://github.com/containernetworking/plugins/releases/download/v${CNI_PLUGINS_VERSION}/cni-plugins-linux-amd64-v${CNI_PLUGINS_VERSION}.tgz -P /tmp/
+
 mkdir -p /opt/cni/bin
+
 tar -C /opt/cni/bin -xzvf /tmp/cni-plugins-linux-amd64-v${CNI_PLUGINS_VERSION}.tgz
 ```
 
@@ -131,6 +139,13 @@ containerd config default | tee /etc/containerd/config.toml
 ```sh
 # Manually edit /etc/containerd/config.toml to change SystemdCgroup to true
 nvim /etc/containerd/config.toml
+```
+
+```sh
+# Replace these values in the config.toml file
+sed 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml | sudo tee /etc/containerd/config.toml > /dev/null
+
+sed 's|sandbox_image = "registry.k8s.io/pause:3.8"|sandbox_image = "registry.k8s.io/pause:3.9"|' /etc/containerd/config.toml | sudo tee /etc/containerd/config.toml > /dev/null
 ```
 
 ### Restart containerd
@@ -186,8 +201,12 @@ sudo -i
 
 ```sh
 # Re-set version variables
-KUBERNETES_VERSION_MajorMinorPatch="1.30.2"
-KUBERNETES_VERSION="1.30.2-1.1"
+KMAJOR="1"
+KMINOR="30"
+KPATCH="3"
+KREV="1.1"
+KUBERNETES_VERSION_MajorMinorPatch="${KMAJOR}.${KMINOR}.${KPATCH}"
+KUBERNETES_VERSION_MajorMinorPatch_Revision="${KMAJOR}.${KMINOR}.${KPATCH}-${KREV}"
 CALICO_VERSION="v3.28.0"
 ```
 
@@ -195,10 +214,10 @@ CALICO_VERSION="v3.28.0"
 
 ```sh
 # Install specific versions of kubelet, kubeadm, and kubectl
+# apt-get install -y kubelet=${KUBERNETES_VERSION_MajorMinorPatch_Revision} kubeadm=${KUBERNETES_VERSION_MajorMinorPatch_Revision} kubectl=${KUBERNETES_VERSION_MajorMinorPatch_Revision}
 
-apt-get install -y kubelet=${KUBERNETES_VERSION} kubeadm=${KUBERNETES_VERSION} kubectl=${KUBERNETES_VERSION}
-
-#apt-get install -y kubelet kubeadm kubectl
+# Let the installer decide what version to install.
+apt-get install -y kubelet kubeadm kubectl
 
 # Mark the Kubernetes packages to hold them at the installed version
 apt-mark hold kubelet kubeadm kubectl
@@ -289,9 +308,8 @@ Run the command from the token create output. `kubeadm token create --print-join
 
 ## Run these on the controller
 
-These commands will lable the worker nodes.
-
 ```sh
+# These commands will lable the worker nodes.
 kubectl label node kworker01 node-role.kubernetes.io/worker=worker
 kubectl label node kworker02 node-role.kubernetes.io/worker=worker
 ```
